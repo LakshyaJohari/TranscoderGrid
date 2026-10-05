@@ -1,0 +1,13 @@
+{
+  "name": "distributed-ffmpeg",
+  "version": "0.1.0",
+  "dependencies": [
+    "cli11",
+    "nlohmann-json",
+    "spdlog",
+    "sqlite3",
+    "gtest",
+    "grpc",
+    "protobuf"
+  ]
+}

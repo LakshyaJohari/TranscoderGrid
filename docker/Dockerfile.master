@@ -1,0 +1,50 @@
+FROM ubuntu:24.04 AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    ninja-build \
+    git \
+    libprotobuf-dev \
+    protobuf-compiler \
+    protobuf-compiler-grpc \
+    libgrpc++-dev \
+    libspdlog-dev \
+    nlohmann-json3-dev \
+    libsqlite3-dev \
+    pkg-config \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 https://github.com/CLIUtils/CLI11.git /tmp/cli11 && \
+    cp -r /tmp/cli11/include/CLI /usr/local/include/ && \
+    rm -rf /tmp/cli11
+
+WORKDIR /src
+COPY . .
+
+RUN cmake -B build -G Ninja \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DENABLE_ADVANCED_MILESTONES=ON && \
+    cmake --build build --target master
+
+# Runtime image
+FROM ubuntu:24.04 AS runner
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ffmpeg \
+    libprotobuf32t64 \
+    libgrpc++1.51 \
+    libspdlog1.12 \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /workspace
+
+COPY --from=builder /src/build/master/master /usr/local/bin/master
+
+ENTRYPOINT ["/usr/local/bin/master"]

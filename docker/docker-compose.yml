@@ -1,0 +1,73 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: transcodegrid-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+
+  worker1:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    container_name: transcodegrid-worker1
+    ports:
+      - "50052:50052"
+    command: ["--port", "50052", "--worker-id", "worker-1"]
+    volumes:
+      - shared_work:/workspace/work
+    restart: unless-stopped
+
+  worker2:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    container_name: transcodegrid-worker2
+    ports:
+      - "50053:50052"
+    command: ["--port", "50052", "--worker-id", "worker-2"]
+    volumes:
+      - shared_work:/workspace/work
+    restart: unless-stopped
+
+  worker3:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    container_name: transcodegrid-worker3
+    ports:
+      - "50054:50052"
+    command: ["--port", "50052", "--worker-id", "worker-3"]
+    volumes:
+      - shared_work:/workspace/work
+    restart: unless-stopped
+
+  master:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.master
+    container_name: transcodegrid-master
+    depends_on:
+      - worker1
+      - worker2
+      - worker3
+      - minio
+    volumes:
+      - shared_work:/workspace/work
+      - ../samples:/workspace/samples
+    profiles: ["cli"]
+
+volumes:
+  minio_data:
+  shared_work:

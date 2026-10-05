@@ -1,0 +1,42 @@
+syntax = "proto3";
+package rffmpeg;
+
+service WorkerService {
+  rpc TranscodeChunk (ChunkRequest) returns (stream ProgressUpdate);
+  rpc Heartbeat (Empty) returns (WorkerStatus);
+  rpc CancelJob (JobIdRequest) returns (Empty);
+}
+
+message ChunkRequest {
+  string chunk_id = 1;
+  string job_id = 2;
+  string source_storage_key = 3;
+  string output_storage_key = 4;
+  double start_time_sec = 5;
+  double duration_sec = 6;
+  string output_codec = 7;
+  string resolution = 8;
+  int32 bitrate_kbps = 9;
+  int32 crf = 10;
+  repeated string extra_filters = 11;
+}
+
+message ProgressUpdate {
+  string chunk_id = 1;
+  double percent_complete = 2;
+  string status = 3;
+  string message = 4;
+}
+
+message Empty {}
+
+message WorkerStatus {
+  string worker_id = 1;
+  int32 active_jobs = 2;
+  bool has_gpu = 3;
+  double cpu_load = 4;
+}
+
+message JobIdRequest {
+  string job_id = 1;
+}
